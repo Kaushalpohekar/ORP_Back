@@ -57,6 +57,7 @@ function getUsers(req, res){
   })
 }
 
+
 function login(req, res){
   const {userName, password} = req.body;
   const checkUserNameQuery = `SELECT * FROM ORP_users where UserName = ?`;
@@ -82,9 +83,31 @@ function login(req, res){
       return res.status(200).json({
         message : 'Login Successful',
         token : jwToken,
-    });
+      });
     });
   });
+}
+
+function user(req, res){
+  const token = req.headers.authorization.split(' ')[1];
+  
+  const decodedToken = jwt.verify(token, process.env.JWT_SECRET_KEY);
+
+  if (!decodedToken){
+    return res.status(401).json({message : 'Invalid token'});
+  }
+
+  const getUserDetailsQuery = `SELECT * FROM ORP_users WHERE UserName = ?`
+  db.query(getUserDetailsQuery, [decodedToken.UserName], (fetchUserError, fetchUsernameResult) =>{
+    if(fetchUserError){
+      return res.status(401).json({message : 'error while fetcing userdetails'});
+    }
+    if(fetchUsernameResult.length === 0){
+      return res.status(404).json({message : 'No user Found'});
+    }
+    res.json({user : fetchUsernameResult});
+  });
+
 }
 
 function generateUserID() {
