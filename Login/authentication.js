@@ -98,7 +98,7 @@ function user(req, res){
   }
 
   const getUserDetailsQuery = `SELECT * FROM ORP_users WHERE UserName = ?`
-  db.query(getUserDetailsQuery, [decodedToken.UserName], (fetchUserError, fetchUsernameResult) =>{
+  db.query(getUserDetailsQuery, [decodedToken.userName], (fetchUserError, fetchUsernameResult) =>{
     if(fetchUserError){
       return res.status(401).json({message : 'error while fetcing userdetails'});
     }
