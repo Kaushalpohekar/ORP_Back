@@ -13,6 +13,7 @@ function graph1(req, res) {
       error : err})
       } 
       res.json({Graph1 : Results});
+      console.log(Results);
     }
   );
 }
