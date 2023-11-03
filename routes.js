@@ -14,8 +14,9 @@ router.get('/user', auth.user);
 /*----------------------------Dashbooard---------------------**/
 router.post('/add-Device', dashboard.addDevice);
 router.put('/edit-Device', dashboard.editDevice);
-router.post('/delete-Device', dashboard.deleteDevice);
-router.get('/getDeviceForUsers',  dashboard.getDevicesByCompanyEmail);
+router.delete('/delete-Device', dashboard.deleteDevice);
+router.get('/getDeviceForUsers/:company_email',  dashboard.getDevicesByCompanyEmail);
+router.get('/getReportData', dashboard.getReportData);
 
 //Elkem data
 router.get('/Graph1', elkem.graph1);
