@@ -129,7 +129,159 @@ function getReportData(req, res) {
   }
 }
 
+function getAnalyticsDataOnTimeTotal(req, res) {
+  const { device_uid, start_time, end_time } = req.body;
+  try {
+    const checkDeviceListQuery = 'SELECT * FROM ORP_devices WHERE device_uid = ? LIMIT 1;';
+    const fetchDevicesQuery = 'SELECT * FROM ORP_Meter WHERE device_uid = ? AND date_time >= ? AND date_time <= ?;';
 
+    // First, check if the device exists in the ORP_devices table
+    db.query(checkDeviceListQuery, [device_uid], (checkError, checkResult) => {
+      if (checkError) {
+        console.error('Error while checking device:', checkError);
+        return res.status(500).json({ message: 'Internal server error' });
+      }
+
+      if (checkResult.length === 0) {
+        return res.status(404).json({ message: 'Device not found in device_list' });
+      }
+
+      // If the device exists in the device_list, proceed to fetch devices from ORP_Meter
+      db.query(fetchDevicesQuery, [device_uid, start_time, end_time], (fetchError, fetchResult) => {
+        if (fetchError) {
+          console.error('Error while fetching devices:', fetchError);
+          return res.status(500).json({ message: 'Internal server error' });
+        }
+
+        // Calculate the on-time for pump_1, on-time for pump_2, and combined offline time
+        let pump1OnTime = 0;
+        let pump2OnTime = 0;
+        let combinedOfflineTime = 0;
+
+        let prevPump1State = 0;
+        let prevPump2State = 0;
+        let prevDateTime = null;
+
+        for (const row of fetchResult) {
+          const pump1State = parseInt(row.pump_1);
+          const pump2State = parseInt(row.pump_2);
+          const dateTime = new Date(row.date_time);
+
+          if (prevDateTime) {
+            const timeDifferenceMinutes = (dateTime - prevDateTime) / 60000; // Convert milliseconds to minutes
+
+            if (pump1State === 1) {
+              pump1OnTime += timeDifferenceMinutes;
+            }
+
+            if (pump2State === 1) {
+              pump2OnTime += timeDifferenceMinutes;
+            }
+
+            if (pump1State !== 1 && pump2State !== 1) {
+              combinedOfflineTime += timeDifferenceMinutes;
+            }
+          }
+
+          prevPump1State = pump1State;
+          prevPump2State = pump2State;
+          prevDateTime = dateTime;
+        }
+
+        // Calculate the total hours in the given start and end times
+        const totalHours = (new Date(end_time) - new Date(start_time)) / 3600000; // Convert milliseconds to hours
+
+        // Calculate the power cut time by subtracting the on-time from total hours
+        const powerCutTime = totalHours - (pump1OnTime + pump2OnTime + combinedOfflineTime);
+
+        return res.json({
+          pump1OnTime,
+          pump2OnTime,
+          combinedOfflineTime,
+          powerCutTime,
+        });
+      });
+    });
+  } catch (error) {
+    console.error('Error in device retrieval:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+}
+
+function getAnalyticsDataOnTimeTotalByDay(req, res) {
+  const { device_uid, start_date, end_date } = req.body;
+  try {
+    const checkDeviceListQuery = 'SELECT * FROM ORP_devices WHERE device_uid = ? LIMIT 1;';
+    const fetchDevicesQuery = 'SELECT * FROM ORP_Meter WHERE device_uid = ? AND date_time >= ? AND date_time <= ?;';
+
+    // First, check if the device exists in the ORP_devices table
+    db.query(checkDeviceListQuery, [device_uid], (checkError, checkResult) => {
+      if (checkError) {
+        console.error('Error while checking device:', checkError);
+        return res.status(500).json({ message: 'Internal server error' });
+      }
+
+      if (checkResult.length === 0) {
+        return res.status(404).json({ message: 'Device not found in device_list' });
+      }
+
+      // If the device exists in the device_list, proceed to fetch devices from ORP_Meter
+      db.query(fetchDevicesQuery, [device_uid, start_date, end_date], (fetchError, fetchResult) => {
+        if (fetchError) {
+          console.error('Error while fetching devices:', fetchError);
+          return res.status(500).json({ message: 'Internal server error' });
+        }
+
+        // Initialize an object to store daily on-time, off-time, and power cut time
+        const dailyData = {};
+
+        for (const row of fetchResult) {
+          const date = new Date(row.date_time);
+          const day = date.toISOString().slice(0, 10); // Extract the date in "YYYY-MM-DD" format
+          const time = date.getTime();
+
+          if (!dailyData[day]) {
+            dailyData[day] = {
+              pump1OnTime: 0,
+              pump2OnTime: 0,
+              combinedOfflineTime: 0,
+            };
+          }
+
+          const pump1State = parseInt(row.pump_1);
+          const pump2State = parseInt(row.pump_2);
+
+          if (pump1State === 1) {
+            dailyData[day].pump1OnTime += 1; // Increment on-time by 1 minute
+          }
+
+          if (pump2State === 1) {
+            dailyData[day].pump2OnTime += 1; // Increment on-time by 1 minute
+          }
+
+          if (pump1State !== 1 && pump2State !== 1) {
+            dailyData[day].combinedOfflineTime += 1; // Increment offline time by 1 minute
+          }
+        }
+
+        // Calculate the total hours in the specified date range
+        const startDate = new Date(start_date);
+        const endDate = new Date(end_date);
+        const totalHours = (endDate - startDate) / 3600000; // Convert milliseconds to hours
+
+        // Calculate and store power cut time for each day
+        for (const day in dailyData) {
+          dailyData[day].powerCutTime = totalHours - (dailyData[day].pump1OnTime + dailyData[day].pump2OnTime + dailyData[day].combinedOfflineTime);
+        }
+
+        return res.json(dailyData);
+      });
+    });
+  } catch (error) {
+    console.error('Error in device retrieval:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+}
 
 
 
@@ -138,5 +290,7 @@ module.exports = {
 	editDevice,
 	deleteDevice,
 	getDevicesByCompanyEmail,
-	getReportData
+	getReportData,
+  getAnalyticsDataOnTimeTotal,
+  getAnalyticsDataOnTimeTotalByDay
 }
