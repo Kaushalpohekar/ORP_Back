@@ -16,9 +16,10 @@ router.post('/add-Device', dashboard.addDevice);
 router.put('/edit-Device', dashboard.editDevice);
 router.delete('/delete-Device', dashboard.deleteDevice);
 router.get('/getDeviceForUsers/:company_email',  dashboard.getDevicesByCompanyEmail);
+router.get('/getUsersForUsers/:company_email',  dashboard.getUsersByCompanyEmail);
 router.get('/getReportData', dashboard.getReportData);
 router.get('/get-Analytics-Data-OnTime-Total', dashboard.getAnalyticsDataOnTimeTotal);
-router.get('/get-Analytics-Data-OnTime-byDay', dashboard.getAnalyticsDataOnTimeTotalByDay);
+//router.get('/get-Analytics-Data-OnTime-byDay', dashboard.getAnalyticsDataOnTimeTotalByDay);
 
 //Elkem data
 router.get('/Graph1', elkem.graph1);
