@@ -32,11 +32,12 @@ function addDevice(req, res) {
 }
 
 function editDevice(req, res) {
-  const { device_uid, device_longitute, device_latitude, device_name, company_email } = req.body;
+  const entryId = req.params.entryId
+  const { device_uid ,device_longitute, device_latitude, device_name, company_email } = req.body;
   try {
-    const updateDeviceQuery = 'UPDATE ORP_devices SET device_longitute = ?, device_latitude = ?, device_name = ? WHERE device_uid = ?';
+    const updateDeviceQuery = 'UPDATE ORP_devices SET device_longitute = ?, device_latitude = ?, device_name = ?, device_uid = ?, WHERE entry_id = ?';
 
-    db.query(updateDeviceQuery, [device_longitute, device_latitude, device_name, device_uid], (updateError, updateResult) => {
+    db.query(updateDeviceQuery, [device_longitute, device_latitude, device_name, device_uid, entryId], (updateError, updateResult) => {
       if (updateError) {
         console.error('Error while updating device:', updateError);
         return res.status(500).json({ message: 'Internal server error' });
@@ -55,20 +56,18 @@ function editDevice(req, res) {
 }
 
 function deleteDevice(req, res) {
-  const { device_uid } = req.params.device_uid;
+  const { entryId } = req.params.device_uid;
   try {
-    const deleteDeviceQuery = 'DELETE FROM ORP_devices WHERE device_uid = ?';
+    const deleteDeviceQuery = 'DELETE FROM ORP_devices WHERE entry_id = ?';
 
-    db.query(deleteDeviceQuery, [device_uid], (deleteError, deleteResult) => {
+    db.query(deleteDeviceQuery, [entryId], (deleteError, deleteResult) => {
       if (deleteError) {
         console.error('Error while deleting device:', deleteError);
         return res.status(500).json({message: 'Internal server error'});
       }
-
       if (deleteResult === 0) {
         return res.status(404).json({message: 'Device not found'});
       }
-
       return res.status(200).json({message: 'Device deleted successfully!'});
     });
   } catch (error) {
