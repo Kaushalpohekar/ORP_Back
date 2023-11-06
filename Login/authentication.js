@@ -153,7 +153,7 @@ function deleteUser(req, res){
     if(deleteError){
       return res.status(401).json({message : 'Error While Deleting User'});
     }
-    if(deleteResult === 0){
+    if(deleteResult.affectedR === 0){
       return res.status(404).json({message : 'User Not Found'});
     }
     return res.status(200).json({message : 'User Deleted Successfully'});

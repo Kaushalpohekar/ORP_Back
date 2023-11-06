@@ -62,14 +62,14 @@ function deleteDevice(req, res) {
     db.query(deleteDeviceQuery, [device_uid], (deleteError, deleteResult) => {
       if (deleteError) {
         console.error('Error while deleting device:', deleteError);
-        return res.status(500).json({ message: 'Internal server error' });
+        return res.status(500).json({message: 'Internal server error'});
       }
 
-      if (deleteResult.affectedRows === 0) {
-        return res.status(404).json({ message: 'Device not found' });
+      if (deleteResult === 0) {
+        return res.status(404).json({message: 'Device not found'});
       }
 
-      return res.json({ message: 'Device deleted successfully!' });
+      return res.status(200).json({message: 'Device deleted successfully!'});
     });
   } catch (error) {
     console.error('Error in device deletion:', error);
