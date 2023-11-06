@@ -122,11 +122,6 @@ function editUser(req , res){
   } = req.body
 
   const editUserQuery = `UPDATE ORP_users SET UserName = ?, FirstName = ?, LastName = ?, CompanyEmail = ?, Contact = ? , UserType = ? WHERE UserId = ?`;
-
-    if(hashError){
-      return res.status(401).json({message : 'error while hasshing password',
-      error : hashError});
-    }
     db.query(editUserQuery, [
       userName,
       firstName,
