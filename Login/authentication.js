@@ -111,6 +111,7 @@ function user(req, res){
 }
 
 function editUser(req , res){
+  const userId = req.params.userId
   const {
     userName,
     password,
@@ -121,7 +122,7 @@ function editUser(req , res){
     userType,
   } = req.body
 
-  const editUserQuery = `UPDATE ORP_users SET UserName = ?, FirstName = ?, LastName = ?, CompanyEmail = ?, Contact = ? , UserType = ?, Password = ?`;
+  const editUserQuery = `UPDATE ORP_users SET UserName = ?, FirstName = ?, LastName = ?, CompanyEmail = ?, Contact = ? , UserType = ?, Password = ? WHERE UserId = ?`;
 
   bcrypt.hash(password, 10, (hashError, hashedPassword) => {
 
@@ -136,7 +137,9 @@ function editUser(req , res){
       companyEmail,
       contact,
       userType,
-      hashedPassword] ,(updateError, updateResult)=> {
+      hashedPassword,
+      userId
+  ] ,(updateError, updateResult)=> {
         if(updateError){
           return res.status(401).json({message : 'Error While Updating User'});
         }
