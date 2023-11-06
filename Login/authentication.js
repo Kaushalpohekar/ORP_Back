@@ -4,10 +4,10 @@ const db = require('../db');
 const jwt = require("jsonwebtoken");
 
 function registerUser(req,res){
-  const{userName, password, firstName, lastName, contactNo, userType}=req.body
+  const{userName, password, firstName, lastName, contactNo, userType, companyEmail}=req.body
   const userId = generateUserID();
   const fetchUserName = `SELECT * FROM  ORP_users WHERE UserName = ?`
-  const insertUserQuery = `INSERT INTO ORP_users(UserId, UserName, Password, FirstName, LastName, ContatNo, UserType) VALUES(?, ?, ?, ?, ?, ?, ?)`;
+  const insertUserQuery = `INSERT INTO ORP_users(UserId, UserName, Password, FirstName, LastName, ContatNo, UserType, CompanyEmail) VALUES(?, ?, ?, ?, ?, ?, ?, ?)`;
 
   db.query(fetchUserName, [userName], (fetchUsernameError, fetchUsernameResult) =>{ 
 
@@ -21,7 +21,7 @@ function registerUser(req,res){
       if(error){
         return res.status(401).json({message : 'Error During Hashing Password'});
       }
-      db.query(insertUserQuery,[userId, userName, hashedPassword, firstName, lastName, contactNo, userType],(insertUserError, insertUserResult) =>{
+      db.query(insertUserQuery,[userId, userName, hashedPassword, firstName, lastName, contactNo, userType, companyEmail],(insertUserError, insertUserResult) =>{
         if(insertUserError){
           console.log(insertUserError);
           return res.status(401).json({message : 'Error during Inserting User'});
