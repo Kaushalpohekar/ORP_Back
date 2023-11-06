@@ -114,7 +114,6 @@ function editUser(req , res){
   const userId = req.params.userId
   const {
     userName,
-    password,
     contact,
     firstName,
     lastName,
@@ -122,9 +121,7 @@ function editUser(req , res){
     userType,
   } = req.body
 
-  const editUserQuery = `UPDATE ORP_users SET UserName = ?, FirstName = ?, LastName = ?, CompanyEmail = ?, Contact = ? , UserType = ?, Password = ? WHERE UserId = ?`;
-
-  bcrypt.hash(password, 10, (hashError, hashedPassword) => {
+  const editUserQuery = `UPDATE ORP_users SET UserName = ?, FirstName = ?, LastName = ?, CompanyEmail = ?, Contact = ? , UserType = ? WHERE UserId = ?`;
 
     if(hashError){
       return res.status(401).json({message : 'error while hasshing password',
@@ -137,7 +134,6 @@ function editUser(req , res){
       companyEmail,
       contact,
       userType,
-      hashedPassword,
       userId
   ] ,(updateError, updateResult)=> {
         if(updateError){
@@ -145,7 +141,6 @@ function editUser(req , res){
         }
         return res.status(200).json({message : 'User Updated Successfully'});
       });
-    });
 }
 
 function deleteUser(req, res){
