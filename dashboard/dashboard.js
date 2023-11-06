@@ -55,7 +55,7 @@ function editDevice(req, res) {
 }
 
 function deleteDevice(req, res) {
-  const { device_uid } = req.body;
+  const { device_uid } = req.params.device_uid;
   try {
     const deleteDeviceQuery = 'DELETE FROM ORP_devices WHERE device_uid = ?';
 

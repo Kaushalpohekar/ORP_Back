@@ -10,11 +10,13 @@ router.get('/fetchUserById/:userId',auth.getUserById);
 router.get('/fetchAllUsers',auth.getUsers);
 router.post('/login', auth.login);
 router.get('/user', auth.user);
+router.put('/editUser/:userId', auth.editUser);
+router.delete('/deleteUser/:userId', auth.deleteUser);
 
 /*----------------------------Dashbooard---------------------**/
 router.post('/add-Device', dashboard.addDevice);
 router.put('/edit-Device', dashboard.editDevice);
-router.delete('/delete-Device', dashboard.deleteDevice);
+router.delete('/delete-Device/:device_uid', dashboard.deleteDevice);
 router.get('/getDeviceForUsers/:company_email',  dashboard.getDevicesByCompanyEmail);
 router.get('/getUsersForUsers/:company_email',  dashboard.getUsersByCompanyEmail);
 router.get('/getReportData', dashboard.getReportData);

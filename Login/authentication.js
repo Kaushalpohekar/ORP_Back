@@ -110,6 +110,58 @@ function user(req, res){
 
 }
 
+function editUser(req , res){
+  const {
+    userName,
+    password,
+    contact,
+    firstName,
+    lastName,
+    companyEmail,
+    userType,
+  } = req.body
+
+  const editUserQuery = `UPDATE ORP_users SET UserName = ?, FirstName = ?, LastName = ?, CompanyEmail = ?, Contact = ? , UserType = ?, Password = ?`;
+
+  bcrypt.hash(password, 10, (hashError, hashedPassword) => {
+
+    if(hashError){
+      return res.status(401).json({message : 'error while hasshing password',
+      error : hashError});
+    }
+    db.query(editUserQuery, [
+      userName,
+      firstName,
+      lastName,
+      companyEmail,
+      contact,
+      userType,
+      hashedPassword] ,(updateError, updateResult)=> {
+        if(updateError){
+          return res.status(401).json({message : 'Error While Updating User'});
+        }
+        return res.status(200).json({message : 'User Updated Successfully'});
+      });
+    });
+}
+
+function deleteUser(req, res){
+  const userId = req.params.userId;
+  const deleteUserQuery = `DELETE FROM ORP_users WHERE UserId = ?`;
+
+  db.query(deleteUserQuery, [userId], (deleteError, deleteResult) => {
+    if(deleteError){
+      return res.status(401).json({message : 'Error While Deleting User'});
+    }
+    if(deleteResult === 0){
+      return res.status(404).json({message : 'User Not Found'});
+    }
+    return res.status(200).json({message : 'User Deleted Successfully'});
+  });
+
+  
+}
+
 function generateUserID() {
   const userIdLength = 10;
   let userId = '';
@@ -129,4 +181,6 @@ module.exports = {
   getUsers,
   login,
   user,
+  editUser,
+  deleteUser,
 }
