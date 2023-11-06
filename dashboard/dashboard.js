@@ -120,7 +120,7 @@ function getReportData(req, res) {
           return res.status(500).json({ message: 'Internal server error' });
         }
 
-        return res.json({ devices: fetchResult });
+        return res.json({ data: fetchResult });
       });
     });
   } catch (error) {
