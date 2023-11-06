@@ -32,11 +32,12 @@ function addDevice(req, res) {
 }
 
 function editDevice(req, res) {
-  const { device_uid, device_longitute, device_latitude, device_name, company_email } = req.body;
+  const entryId = req.params.entryId
+  const { device_uid ,device_longitute, device_latitude, device_name, company_email } = req.body;
   try {
-    const updateDeviceQuery = 'UPDATE ORP_devices SET device_longitute = ?, device_latitude = ?, device_name = ? WHERE device_uid = ?';
+    const updateDeviceQuery = 'UPDATE ORP_devices SET device_longitute = ?, device_latitude = ?, device_name = ?, device_uid = ?, WHERE entry_id = ?';
 
-    db.query(updateDeviceQuery, [device_longitute, device_latitude, device_name, device_uid], (updateError, updateResult) => {
+    db.query(updateDeviceQuery, [device_longitute, device_latitude, device_name, device_uid, entryId], (updateError, updateResult) => {
       if (updateError) {
         console.error('Error while updating device:', updateError);
         return res.status(500).json({ message: 'Internal server error' });
@@ -55,21 +56,19 @@ function editDevice(req, res) {
 }
 
 function deleteDevice(req, res) {
-  const { device_uid } = req.body;
+  const { entryId } = req.params.entryId;
   try {
-    const deleteDeviceQuery = 'DELETE FROM ORP_devices WHERE device_uid = ?';
+    const deleteDeviceQuery = 'DELETE FROM ORP_devices WHERE entry_id = ?';
 
-    db.query(deleteDeviceQuery, [device_uid], (deleteError, deleteResult) => {
+    db.query(deleteDeviceQuery, [entryId], (deleteError, deleteResult) => {
       if (deleteError) {
         console.error('Error while deleting device:', deleteError);
-        return res.status(500).json({ message: 'Internal server error' });
+        return res.status(500).json({message: 'Internal server error'});
       }
-
-      if (deleteResult.affectedRows === 0) {
-        return res.status(404).json({ message: 'Device not found' });
+      if (deleteResult === 0) {
+        return res.status(404).json({message: 'Device not found'});
       }
-
-      return res.json({ message: 'Device deleted successfully!' });
+      return res.status(200).json({message: 'Device deleted successfully!'});
     });
   } catch (error) {
     console.error('Error in device deletion:', error);
@@ -227,6 +226,139 @@ function getUsersByCompanyEmail(req, res) {
   }
 }
 
+function getDataByTimeInterval(req, res) {
+  try {
+    const deviceId = req.params.deviceId;
+    const timeInterval = req.query.interval;
+    if (!timeInterval) {
+      return res.status(400).json({ message: 'Invalid time interval' });
+    }
+
+    let duration;
+    switch (timeInterval) {
+      case '30sec':
+        duration = 'INTERVAL 30 SECOND';
+        break;
+      case '1min':
+        duration = 'INTERVAL 1 MINUTE';
+        break;
+      case '2min':
+        duration = 'INTERVAL 2 MINUTE';
+        break;
+      case '5min':
+        duration = 'INTERVAL 5 MINUTE';
+        break;
+      case '10min':
+        duration = 'INTERVAL 10 MINUTE';
+        break;
+      case '30min':
+        duration = 'INTERVAL 30 MINUTE';
+        break;
+      case '1hour':
+        duration = 'INTERVAL 1 HOUR';
+        break;
+      case '2hour':
+        duration = 'INTERVAL 2 HOUR';
+        break;
+      case '10hour':
+        duration = 'INTERVAL 10 HOUR';
+        break;
+      case '12hour':
+        duration = 'INTERVAL 12 HOUR';
+        break;
+      case '1day':
+        duration = 'INTERVAL 1 DAY';
+        break;
+      case '7day':
+        duration = 'INTERVAL 7 DAY';
+        break;
+      case '30day':
+        duration = 'INTERVAL 30 DAY';
+        break;
+      default:
+        return res.status(400).json({ message: 'Invalid time interval' });
+    }
+
+    const sql = `SELECT * FROM ORP_Meter WHERE DeviceUID = ? AND TimeStamp >= DATE_SUB(NOW(), ${duration})`;
+    db.query(sql, [deviceId], (error, results) => {
+      if (error) {
+        console.error('Error fetching data:', error);
+        return res.status(500).json({ message: 'Internal server error' });
+      }
+      res.json({ data: results });
+    });
+  } catch (error) {
+    console.error('An error occurred:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+}
+function getDataByTimeInterval2(req, res) {
+  try {
+    const deviceId = req.params.deviceId;
+    const timeInterval = req.query.interval;
+    if (!timeInterval) {
+      return res.status(400).json({ message: 'Invalid time interval' });
+    }
+
+    let duration;
+    switch (timeInterval) {
+      case '30sec':
+        duration = 'INTERVAL 30 SECOND';
+        break;
+      case '1min':
+        duration = 'INTERVAL 1 MINUTE';
+        break;
+      case '2min':
+        duration = 'INTERVAL 2 MINUTE';
+        break;
+      case '5min':
+        duration = 'INTERVAL 5 MINUTE';
+        break;
+      case '10min':
+        duration = 'INTERVAL 10 MINUTE';
+        break;
+      case '30min':
+        duration = 'INTERVAL 30 MINUTE';
+        break;
+      case '1hour':
+        duration = 'INTERVAL 1 HOUR';
+        break;
+      case '2hour':
+        duration = 'INTERVAL 2 HOUR';
+        break;
+      case '10hour':
+        duration = 'INTERVAL 10 HOUR';
+        break;
+      case '12hour':
+        duration = 'INTERVAL 12 HOUR';
+        break;
+      case '1day':
+        duration = 'INTERVAL 1 DAY';
+        break;
+      case '7day':
+        duration = 'INTERVAL 7 DAY';
+        break;
+      case '30day':
+        duration = 'INTERVAL 30 DAY';
+        break;
+      default:
+        return res.status(400).json({ message: 'Invalid time interval' });
+    }
+
+    const sql = `SELECT * FROM ORP_Meter WHERE DeviceUID = ? AND TimeStamp >= DATE_SUB(NOW(), ${duration})`;
+    db.query(sql, [deviceId], (error, results) => {
+      if (error) {
+        console.error('Error fetching data:', error);
+        return res.status(500).json({ message: 'Internal server error' });
+      }
+      res.json({ data: results });
+    });
+  } catch (error) {
+    console.error('An error occurred:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+}
+
 module.exports = {
 	addDevice,
 	editDevice,
@@ -235,5 +367,6 @@ module.exports = {
 	getReportData,
   getAnalyticsDataOnTimeTotal,
  // getAnalyticsDataOnTimeTotalByDay,
-  getUsersByCompanyEmail
+  getUsersByCompanyEmail,
+  getDataByTimeInterval,
 }

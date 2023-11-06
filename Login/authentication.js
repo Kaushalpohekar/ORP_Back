@@ -4,10 +4,10 @@ const db = require('../db');
 const jwt = require("jsonwebtoken");
 
 function registerUser(req,res){
-  const{userName, password, firstName, lastName, contactNo, userType}=req.body
+  const{userName, password, firstName, lastName, contactNo, userType, companyEmail}=req.body
   const userId = generateUserID();
   const fetchUserName = `SELECT * FROM  ORP_users WHERE UserName = ?`
-  const insertUserQuery = `INSERT INTO ORP_users(UserId, UserName, Password, FirstName, LastName, ContatNo, UserType) VALUES(?, ?, ?, ?, ?, ?, ?)`;
+  const insertUserQuery = `INSERT INTO ORP_users(UserId, UserName, Password, FirstName, LastName, Contact, UserType, CompanyEmail) VALUES(?, ?, ?, ?, ?, ?, ?, ?)`;
 
   db.query(fetchUserName, [userName], (fetchUsernameError, fetchUsernameResult) =>{ 
 
@@ -21,7 +21,7 @@ function registerUser(req,res){
       if(error){
         return res.status(401).json({message : 'Error During Hashing Password'});
       }
-      db.query(insertUserQuery,[userId, userName, hashedPassword, firstName, lastName, contactNo, userType],(insertUserError, insertUserResult) =>{
+      db.query(insertUserQuery,[userId, userName, hashedPassword, firstName, lastName, contactNo, userType, companyEmail],(insertUserError, insertUserResult) =>{
         if(insertUserError){
           console.log(insertUserError);
           return res.status(401).json({message : 'Error during Inserting User'});
@@ -110,6 +110,51 @@ function user(req, res){
 
 }
 
+function editUser(req , res){
+  const userId = req.params.userId
+  const {
+    userName,
+    contact,
+    firstName,
+    lastName,
+    companyEmail,
+    userType,
+  } = req.body
+
+  const editUserQuery = `UPDATE ORP_users SET UserName = ?, FirstName = ?, LastName = ?, CompanyEmail = ?, Contact = ? , UserType = ? WHERE UserId = ?`;
+    db.query(editUserQuery, [
+      userName,
+      firstName,
+      lastName,
+      companyEmail,
+      contact,
+      userType,
+      userId
+  ] ,(updateError, updateResult)=> {
+        if(updateError){
+          return res.status(401).json({message : 'Error While Updating User'});
+        }
+        return res.status(200).json({message : 'User Updated Successfully'});
+      });
+}
+
+function deleteUser(req, res){
+  const userId = req.params.userId;
+  const deleteUserQuery = `DELETE FROM ORP_users WHERE UserId = ?`;
+
+  db.query(deleteUserQuery, [userId], (deleteError, deleteResult) => {
+    if(deleteError){
+      return res.status(401).json({message : 'Error While Deleting User'});
+    }
+    if(deleteResult.affectedR === 0){
+      return res.status(404).json({message : 'User Not Found'});
+    }
+    return res.status(200).json({message : 'User Deleted Successfully'});
+  });
+
+  
+}
+
 function generateUserID() {
   const userIdLength = 10;
   let userId = '';
@@ -129,4 +174,6 @@ module.exports = {
   getUsers,
   login,
   user,
+  editUser,
+  deleteUser,
 }
