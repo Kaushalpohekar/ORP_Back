@@ -3,7 +3,7 @@ const router = express.Router();
 const auth = require('./Login/authentication');
 const elkem = require('./elkem/elkem');
 const dashboard = require('./dashboard/dashboard');
-
+const user = require('./dashboard/user');
 
 router.post('/addUser', auth.registerUser);
 router.get('/fetchUserById/:userId',auth.getUserById);
@@ -22,7 +22,14 @@ router.get('/getUsersForUsers/:company_email',  dashboard.getUsersByCompanyEmail
 router.post('/getReportData', dashboard.getReportData);
 router.get('/get-Analytics-Data-OnTime-Total', dashboard.getAnalyticsDataOnTimeTotal);
 //router.get('/get-Analytics-Data-OnTime-byDay', dashboard.getAnalyticsDataOnTimeTotalByDay);
-router.get('/getAnalyicsData/:deviceId/intervals', dashboard.getDataByTimeIntervalAnalytics);
+router.get('/getAnalyicsData/:deviceId', dashboard.getDataByTimeIntervalAnalytics);
+
+//router.get('/data/:deviceId/interval',dashboard.getDataByTimeInterval);
+
+router.put('/updateCompanyDetails',user.updateCompanyDetails);
+router.put('/updatePassword',user.updatepassword);
+router.put('/updateContactDetails',user.updateContactDetails);
+
 
 //Elkem data
 router.get('/Graph1', elkem.graph1);

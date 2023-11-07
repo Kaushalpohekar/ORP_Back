@@ -4,10 +4,10 @@ const db = require('../db');
 const jwt = require("jsonwebtoken");
 
 function registerUser(req,res){
-  const{userName, password, firstName, lastName, contactNo, userType, companyEmail}=req.body
+  const{userName, password, firstName, lastName, contactNo, userType, companyEmail, location, companyName}=req.body
   const userId = generateUserID();
   const fetchUserName = `SELECT * FROM  ORP_users WHERE UserName = ?`
-  const insertUserQuery = `INSERT INTO ORP_users(UserId, UserName, Password, FirstName, LastName, Contact, UserType, CompanyEmail) VALUES(?, ?, ?, ?, ?, ?, ?, ?)`;
+  const insertUserQuery = `INSERT INTO ORP_users(UserId, UserName, Password, FirstName, LastName, Contact, UserType, CompanyEmail, Location, CompanyName) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
 
   db.query(fetchUserName, [userName], (fetchUsernameError, fetchUsernameResult) =>{ 
 
@@ -21,7 +21,7 @@ function registerUser(req,res){
       if(error){
         return res.status(401).json({message : 'Error During Hashing Password'});
       }
-      db.query(insertUserQuery,[userId, userName, hashedPassword, firstName, lastName, contactNo, userType, companyEmail],(insertUserError, insertUserResult) =>{
+      db.query(insertUserQuery,[userId, userName, hashedPassword, firstName, lastName, contactNo, userType, companyEmail, location, companyName],(insertUserError, insertUserResult) =>{
         if(insertUserError){
           console.log(insertUserError);
           return res.status(401).json({message : 'Error during Inserting User'});
@@ -119,9 +119,10 @@ function editUser(req , res){
     lastName,
     companyEmail,
     userType,
+    location
   } = req.body
 
-  const editUserQuery = `UPDATE ORP_users SET UserName = ?, FirstName = ?, LastName = ?, CompanyEmail = ?, Contact = ? , UserType = ? WHERE UserId = ?`;
+  const editUserQuery = `UPDATE ORP_users SET UserName = ?, FirstName = ?, LastName = ?, CompanyEmail = ?, Contact = ? , UserType = ? , Location = ? WHERE UserId = ?`;
     db.query(editUserQuery, [
       userName,
       firstName,
@@ -129,7 +130,8 @@ function editUser(req , res){
       companyEmail,
       contact,
       userType,
-      userId
+      location,
+      userId,
   ] ,(updateError, updateResult)=> {
         if(updateError){
           return res.status(401).json({message : 'Error While Updating User'});
