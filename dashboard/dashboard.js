@@ -234,10 +234,6 @@ function getDataByTimeIntervalAnalytics(req, res) {
       return res.status(400).json({ message: 'Invalid time interval' });
     }
 
-    // Define your start_time and end_time here
-    const start_time = new Date('your_start_time_here');
-    const end_time = new Date('your_end_time_here');
-
     let duration;
     switch (timeInterval) {
       case '30sec':
