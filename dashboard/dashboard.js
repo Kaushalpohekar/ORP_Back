@@ -283,8 +283,8 @@ function getDataByTimeIntervalAnalytics(req, res) {
         return res.status(400).json({ message: 'Invalid time interval' });
     }
 
-    const sql = `SELECT * FROM ORP_Meter WHERE device_uid = ? AND date_time >= DATE_SUB(NOW(), ${duration})`;
-    db.query(sql, [deviceId], (error, results) => {
+    const sql = `SELECT * FROM ORP_Meter WHERE device_uid = ? AND date_time >= ? AND date_time <= ?`;
+    db.query(sql, [deviceId, start_time, end_time], (error, results) => {
       if (error) {
         console.error('Error fetching data:', error);
         return res.status(500).json({ message: 'Internal server error' });
