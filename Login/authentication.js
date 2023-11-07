@@ -7,7 +7,7 @@ function registerUser(req,res){
   const{userName, password, firstName, lastName, contactNo, userType, companyEmail, location, companyName}=req.body
   const userId = generateUserID();
   const fetchUserName = `SELECT * FROM  ORP_users WHERE UserName = ?`
-  const insertUserQuery = `INSERT INTO ORP_users(UserId, UserName, Password, FirstName, LastName, Contact, UserType, CompanyEmail, Location, CompanyName) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+  const insertUserQuery = `INSERT INTO ORP_users(UserId, UserName, Password, FirstName, LastName, Contact, UserType, CompanyEmail, Location, CompanyName) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
 
   db.query(fetchUserName, [userName], (fetchUsernameError, fetchUsernameResult) =>{ 
 

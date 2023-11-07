@@ -279,7 +279,7 @@ function getDataByTimeIntervalAnalytics(req, res) {
     }
 
     const sql = `SELECT * FROM ORP_Meter WHERE device_uid = ? AND date_time >= ? AND date_time <= ?`;
-    db.query(sql, [deviceId, timeInterval], (error, results) => {
+    db.query(sql, [deviceId], (error, results) => {
       if (error) {
         console.error('Error fetching data:', error);
         return res.status(500).json({ message: 'Internal server error' });
