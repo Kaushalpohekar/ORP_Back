@@ -233,11 +233,6 @@ function getDataByTimeIntervalAnalytics(req, res) {
     if (!timeInterval) {
       return res.status(400).json({ message: 'Invalid time interval' });
     }
-
-    // Define your start_time and end_time here
-    const start_time = new Date('your_start_time_here');
-    const end_time = new Date('your_end_time_here');
-
     let duration;
     switch (timeInterval) {
       case '30sec':
@@ -284,7 +279,7 @@ function getDataByTimeIntervalAnalytics(req, res) {
     }
 
     const sql = `SELECT * FROM ORP_Meter WHERE device_uid = ? AND date_time >= ? AND date_time <= ?`;
-    db.query(sql, [deviceId, start_time, end_time], (error, results) => {
+    db.query(sql, [deviceId, timeInterval], (error, results) => {
       if (error) {
         console.error('Error fetching data:', error);
         return res.status(500).json({ message: 'Internal server error' });
