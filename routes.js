@@ -23,6 +23,9 @@ router.post('/getReportData', dashboard.getReportData);
 router.get('/get-Analytics-Data-OnTime-Total', dashboard.getAnalyticsDataOnTimeTotal);
 //router.get('/get-Analytics-Data-OnTime-byDay', dashboard.getAnalyticsDataOnTimeTotalByDay);
 
+router.get('/data/:deviceId/interval',dashboard.getDataByTimeInterval);
+
+
 //Elkem data
 router.get('/Graph1', elkem.graph1);
 
