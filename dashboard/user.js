@@ -50,7 +50,7 @@ function updatepassword(req, res){
   });
 }
 
-function updateContactgiDetails(req, res){
+function updateContactDetails(req, res){
   const userId = req.params.userId;
   const {contact, location} = req.body;
   const fetchUserIdQuery = `SELECT * FROM ORP_users WHERE UserId = ?`;
@@ -74,5 +74,6 @@ function updateContactgiDetails(req, res){
 
 module.exports = {
   updateCompanyDetails,
-
+  updatepassword,
+  updateContactDetails
 }

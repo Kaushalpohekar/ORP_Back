@@ -3,7 +3,7 @@ const router = express.Router();
 const auth = require('./Login/authentication');
 const elkem = require('./elkem/elkem');
 const dashboard = require('./dashboard/dashboard');
-
+const user = require('./dashboard/user');
 
 router.post('/addUser', auth.registerUser);
 router.get('/fetchUserById/:userId',auth.getUserById);
@@ -25,6 +25,10 @@ router.get('/get-Analytics-Data-OnTime-Total', dashboard.getAnalyticsDataOnTimeT
 router.get('/getAnalyicsData/:deviceId', dashboard.getDataByTimeIntervalAnalytics);
 
 //router.get('/data/:deviceId/interval',dashboard.getDataByTimeInterval);
+
+router.put('/updateCompanyDetails',user.updateCompanyDetails);
+router.put('/updatePassword',user.updatepassword);
+router.put('/updateContactDetails',user.updateContactDetails);
 
 
 //Elkem data
