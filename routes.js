@@ -22,6 +22,7 @@ router.get('/getUsersForUsers/:company_email',  dashboard.getUsersByCompanyEmail
 router.post('/getReportData', dashboard.getReportData);
 router.get('/get-Analytics-Data-OnTime-Total', dashboard.getAnalyticsDataOnTimeTotal);
 //router.get('/get-Analytics-Data-OnTime-byDay', dashboard.getAnalyticsDataOnTimeTotalByDay);
+router.get('/getAnalyicsData/:deviceId/intervals', dashboard.getDataByTimeIntervalAnalytics);
 
 //Elkem data
 router.get('/Graph1', elkem.graph1);

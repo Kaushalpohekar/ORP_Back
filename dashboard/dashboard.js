@@ -226,7 +226,7 @@ function getUsersByCompanyEmail(req, res) {
   }
 }
 
-function getDataByTimeInterval(req, res) {
+function getDataByTimeIntervalAnalytics(req, res) {
   try {
     const deviceId = req.params.deviceId;
     const timeInterval = req.query.interval;
@@ -354,5 +354,5 @@ module.exports = {
   getAnalyticsDataOnTimeTotal,
  // getAnalyticsDataOnTimeTotalByDay,
   getUsersByCompanyEmail,
-  getDataByTimeInterval,
+  getDataByTimeIntervalAnalytics,
 }
