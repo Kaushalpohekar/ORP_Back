@@ -122,7 +122,7 @@ function editUser(req , res){
     location
   } = req.body
 
-  const editUserQuery = `UPDATE ORP_users SET UserName = ?, FirstName = ?, LastName = ?, CompanyEmail = ?, Contact = ? , UserType = ? , Location = ?, CompanyName = ? WHERE UserId = ?`;
+  const editUserQuery = `UPDATE ORP_users SET UserName = ?, FirstName = ?, LastName = ?, CompanyEmail = ?, Contact = ? , UserType = ? , Location = ? WHERE UserId = ?`;
     db.query(editUserQuery, [
       userName,
       firstName,
