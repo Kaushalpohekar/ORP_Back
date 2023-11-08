@@ -20,15 +20,13 @@ router.delete('/delete-Device/:entryId', dashboard.deleteDevice);
 router.get('/getDeviceForUsers/:company_email',  dashboard.getDevicesByCompanyEmail);
 router.get('/getUsersForUsers/:company_email',  dashboard.getUsersByCompanyEmail);
 router.post('/getReportData', dashboard.getReportData);
-router.get('/get-Analytics-Data-OnTime-Total', dashboard.getAnalyticsDataOnTimeTotal);
-//router.get('/get-Analytics-Data-OnTime-byDay', dashboard.getAnalyticsDataOnTimeTotalByDay);
-router.get('/getAnalyicsData/:deviceId', dashboard.getDataByTimeIntervalAnalytics);
-
-//router.get('/data/:deviceId/interval',dashboard.getDataByTimeInterval);
-
+router.post('/get-Analytics-Data-OnTime-Total-customs', dashboard.getAnalyticsDataOnTimeTotalPieCharts);
+router.get('/get-Analytics-Data-OnTime-Total-interval/:deviceId', dashboard.getDataByTimeIntervalAnalyticsPieChart);
 router.put('/updateCompanyDetails',user.updateCompanyDetails);
 router.put('/updatePassword',user.updatepassword);
 router.put('/updateContactDetails',user.updateContactDetails);
+router.post('/get-Analytics-Data-Line-Total-customs', dashboard.getAnalyticsDataOnTimeTotalLineCharts);
+router.get('/get-Analytics-Data-Line-Total-interval/:deviceId', dashboard.getAnalyticsDataOnTimeTotalLineCharts);
 
 
 //Elkem data

@@ -128,7 +128,7 @@ function getReportData(req, res) {
   }
 }
 
-function getAnalyticsDataOnTimeTotal(req, res) {
+function getAnalyticsDataOnTimeTotalPieCharts(req, res) {
   const { device_uid, start_time, end_time } = req.body;
   try {
     const checkDeviceListQuery = 'SELECT * FROM ORP_devices WHERE device_uid = ? LIMIT 1;';
@@ -207,6 +207,39 @@ function getAnalyticsDataOnTimeTotal(req, res) {
   }
 }
 
+function getAnalyticsDataOnTimeTotalLineCharts(req, res) {
+  const { device_uid, start_time, end_time } = req.body;
+  try {
+    const checkDeviceListQuery = 'SELECT * FROM ORP_devices WHERE device_uid = ? LIMIT 1;';
+    const fetchDevicesQuery = 'SELECT * FROM ORP_Meter WHERE device_uid = ? AND date_time >= ? AND date_time <= ?;';
+
+    // First, check if the device exists in the ORP_devices table
+    db.query(checkDeviceListQuery, [device_uid], (checkError, checkResult) => {
+      if (checkError) {
+        console.error('Error while checking device:', checkError);
+        return res.status(500).json({ message: 'Internal server error' });
+      }
+
+      if (checkResult.length === 0) {
+        return res.status(404).json({ message: 'Device not found in device_list' });
+      }
+
+      // If the device exists in the device_list, proceed to fetch devices from ORP_Meter
+      db.query(fetchDevicesQuery, [device_uid, start_time, end_time], (fetchError, fetchResult) => {
+        if (fetchError) {
+          console.error('Error while fetching devices:', fetchError);
+          return res.status(500).json({ message: 'Internal server error' });
+        }
+
+        res.json({data:fetchResult});
+      });
+    });
+  } catch (error) {
+    console.error('Error in device retrieval:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+}
+
 function getUsersByCompanyEmail(req, res) {
   const { company_email } = req.params;
   try {
@@ -226,7 +259,7 @@ function getUsersByCompanyEmail(req, res) {
   }
 }
 
-function getDataByTimeIntervalAnalytics(req, res) {
+function getDataByTimeIntervalAnalyticsPieChart(req, res) {
   try {
     const deviceId = req.params.deviceId;
     const timeInterval = req.query.interval;
@@ -236,51 +269,33 @@ function getDataByTimeIntervalAnalytics(req, res) {
 
     let duration;
     switch (timeInterval) {
-      case '30sec':
-        duration = 'INTERVAL 30 SECOND';
+      case 'Live':
+        duration = 30; // 30 seconds
         break;
-      case '1min':
-        duration = 'INTERVAL 1 MINUTE';
+      case 'min':
+        duration = 60; // 1 minute
         break;
-      case '2min':
-        duration = 'INTERVAL 2 MINUTE';
+      case 'hour':
+        duration = 3600; // 1 hour
         break;
-      case '5min':
-        duration = 'INTERVAL 5 MINUTE';
+      case 'day':
+        duration = 86400; // 24 hours
         break;
-      case '10min':
-        duration = 'INTERVAL 10 MINUTE';
+      case 'week':
+        duration = 604800; // 7 days
         break;
-      case '30min':
-        duration = 'INTERVAL 30 MINUTE';
-        break;
-      case '1hour':
-        duration = 'INTERVAL 1 HOUR';
-        break;
-      case '2hour':
-        duration = 'INTERVAL 2 HOUR';
-        break;
-      case '10hour':
-        duration = 'INTERVAL 10 HOUR';
-        break;
-      case '12hour':
-        duration = 'INTERVAL 12 HOUR';
-        break;
-      case '1day':
-        duration = 'INTERVAL 1 DAY';
-        break;
-      case '7day':
-        duration = 'INTERVAL 7 DAY';
-        break;
-      case '30day':
-        duration = 'INTERVAL 30 DAY';
+      case 'month':
+        duration = 2592000; // 30 days
         break;
       default:
         return res.status(400).json({ message: 'Invalid time interval' });
     }
 
-    const sql = `SELECT * FROM ORP_Meter WHERE device_uid = ? AND date_time >= ? AND date_time <= ?`;
-    db.query(sql, [deviceId], (error, results) => {
+    const currentTime = new Date();
+    const startTime = new Date(currentTime - duration * 1000); // Calculate the start time
+
+    const sql = `SELECT * FROM ORP_Meter WHERE device_uid = ? AND date_time >= ?`;
+    db.query(sql, [deviceId, startTime], (error, results) => {
       if (error) {
         console.error('Error fetching data:', error);
         return res.status(500).json({ message: 'Internal server error' });
@@ -321,7 +336,7 @@ function getDataByTimeIntervalAnalytics(req, res) {
       }
 
       // Calculate the total hours in the given start and end times
-      const totalHours = (end_time - start_time) / 3600000; // Convert milliseconds to hours
+      const totalHours = duration / 3600; // Convert seconds to hours
 
       // Calculate the power cut time by subtracting the on-time from total hours
       const powerCutTime = totalHours - (pump1OnTime + pump2OnTime + combinedOfflineTime);
@@ -341,14 +356,63 @@ function getDataByTimeIntervalAnalytics(req, res) {
 
 
 
+function getDataByTimeIntervalAnalyticsLineChart(req, res) {
+  try {
+    const deviceId = req.params.deviceId;
+    const timeInterval = req.query.interval;
+    if (!timeInterval) {
+      return res.status(400).json({ message: 'Invalid time interval' });
+    }
+
+    let duration;
+    switch (timeInterval) {
+      case 'Live':
+        duration = 'INTERVAL 30 SECOND';
+        break;
+      case 'min':
+        duration = 'INTERVAL 1 MINUTE';
+        break;
+      case 'hour':
+        duration = 'INTERVAL 1 HOUR';
+        break;
+      case 'day':
+        duration = 'INTERVAL 24 HOUR';
+        break;
+      case 'week':
+        duration = 'INTERVAL 7 DAY';
+        break;
+      case 'month':
+        duration = 'INTERVAL 30 DAY';
+        break;
+      default:
+        return res.status(400).json({ message: 'Invalid time interval' });
+    }
+
+    const sql = `SELECT * FROM ORP_Meter WHERE device_uid = ? AND date_time >= DATE_SUB(NOW(), ${duration})`;
+    db.query(sql, [deviceId], (error, results) => {
+      if (error) {
+        console.error('Error fetching data:', error);
+        return res.status(500).json({ message: 'Internal server error' });
+      }
+
+      res.json({data: results});
+    });
+  } catch (error) {
+    console.error('An error occurred:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+}
+
+
 module.exports = {
 	addDevice,
 	editDevice,
 	deleteDevice,
 	getDevicesByCompanyEmail,
 	getReportData,
-  getAnalyticsDataOnTimeTotal,
- // getAnalyticsDataOnTimeTotalByDay,
+  getAnalyticsDataOnTimeTotalPieCharts,
+  getAnalyticsDataOnTimeTotalLineCharts,
   getUsersByCompanyEmail,
-  getDataByTimeIntervalAnalytics,
+  getDataByTimeIntervalAnalyticsPieChart,
+  getDataByTimeIntervalAnalyticsLineChart
 }
