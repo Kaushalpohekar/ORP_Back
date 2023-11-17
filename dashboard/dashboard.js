@@ -35,7 +35,7 @@ function editDevice(req, res) {
   const entryId = req.params.entryId
   const { device_uid ,device_longitute, device_latitude, device_name, company_email } = req.body;
   try {
-    const updateDeviceQuery = 'UPDATE ORP_devices SET device_longitute = ?, device_latitude = ?, device_name = ?, device_uid = ?, WHERE entry_id = ?';
+    const updateDeviceQuery = 'UPDATE ORP_devices SET device_longitute = ?, device_latitude = ?, device_name = ?, device_uid = ? WHERE entry_id = ?';
 
     db.query(updateDeviceQuery, [device_longitute, device_latitude, device_name, device_uid, entryId], (updateError, updateResult) => {
       if (updateError) {
