@@ -56,25 +56,19 @@ function editDevice(req, res) {
 }
 
 function deleteDevice(req, res) {
-  const { entryId } = req.params.entryId;
-  try {
-    const deleteDeviceQuery = 'DELETE FROM ORP_devices WHERE entry_id = ?';
+  const device_uid = req.params.device_uid;
 
-    db.query(deleteDeviceQuery, [entryId], (deleteError, deleteResult) => {
-      if (deleteError) {
-        console.error('Error while deleting device:', deleteError);
-        return res.status(500).json({message: 'Internal server error'});
-      }
-      if (deleteResult === 0) {
-        return res.status(404).json({message: 'Device not found'});
-      }
-      return res.status(200).json({message: 'Device deleted successfully!'});
-    });
-  } catch (error) {
-    console.error('Error in device deletion:', error);
-    res.status(500).json({ message: 'Internal server error' });
-  }
+  const deleteDeviceQuery = 'DELETE FROM ORP_devices WHERE device_uid = ?';
+
+  db.query(deleteDeviceQuery, [device_uid], (deleteError, deleteResult) => {
+    if (deleteError) {
+      console.error('Error while deleting device:', deleteError);
+      return res.status(500).json({ message: 'Internal server error' });
+    }
+    return res.status(200).json({ message: 'Device deleted successfully!' });
+  });
 }
+
 
 function getDevicesByCompanyEmail(req, res) {
   const { company_email } = req.params;

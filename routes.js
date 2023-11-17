@@ -16,7 +16,7 @@ router.delete('/deleteUser/:userId', auth.deleteUser);
 /*----------------------------Dashbooard---------------------**/
 router.post('/add-Device', dashboard.addDevice);
 router.put('/edit-Device/:entryId', dashboard.editDevice);
-router.delete('/delete-Device/:entryId', dashboard.deleteDevice);
+router.delete('/delete-Device/:device_uid', dashboard.deleteDevice);
 router.get('/getDeviceForUsers/:company_email',  dashboard.getDevicesByCompanyEmail);
 router.get('/getUsersForUsers/:company_email',  dashboard.getUsersByCompanyEmail);
 router.post('/getReportData', dashboard.getReportData);
