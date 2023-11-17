@@ -28,6 +28,7 @@ router.put('/updateContactDetails',user.updateContactDetails);
 router.post('/get-Analytics-Data-Line-Total-customs', dashboard.getAnalyticsDataOnTimeTotalLineCharts);
 router.get('/get-Analytics-Data-Line-Total-interval/:deviceId', dashboard.getDataByTimeIntervalAnalyticsLineChart);
 router.get('/get-Analytics-Data-Bar-Total-interval/:deviceId', dashboard.TotalONOFFIntervalByDays);
+router.get('/get-Analytics-Data-Bar-Total-Custom', dashboard.TotalONOFFCustomByDays)
 
 //Elkem data
 router.get('/Graph1', elkem.graph1);

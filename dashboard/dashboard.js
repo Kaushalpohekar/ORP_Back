@@ -494,7 +494,70 @@ function TotalONOFFIntervalByDays(req, res) {
   }
 }
 
+function TotalONOFFCustomByDays(req, res) {
+  try {
+    const {device_uid, start_time, end_time}= req.body;
+    const sql = 'SELECT * FROM ORP_Meter WHERE device_uid = ? AND date_time >= ? AND date_time <= ?';
 
+    db.query(sql, [device_uid, start_time, end_time], (error, results) => {
+      if (error) {
+        console.error('Error fetching data:', error);
+        return res.status(500).json({ message: 'Internal server error' });
+      }
+
+      const dayData = {};
+
+      for (const row of results) {
+        const dateTime = new Date(row.date_time);
+        const dateKey = dateTime.toISOString().split('T')[0];
+
+        if (!dayData[dateKey]) {
+          dayData[dateKey] = {
+            pump1OnTime: 0,
+            pump2OnTime: 0,
+            combinedOfflineTime: 0,
+          };
+        }
+
+        const pump1State = parseInt(row.pump_1);
+        const pump2State = parseInt(row.pump_2);
+
+        const prevRow = results.find(
+          (r) => new Date(r.date_time).toISOString().split('T')[0] === dateKey
+        );
+
+        if (prevRow) {
+          const timeDifferenceMinutes = (dateTime - new Date(prevRow.date_time)) / 60000;
+
+          if (pump1State === 1) {
+            dayData[dateKey].pump1OnTime += timeDifferenceMinutes;
+          }
+
+          if (pump2State === 1) {
+            dayData[dateKey].pump2OnTime += timeDifferenceMinutes;
+          }
+
+          if (pump1State !== 1 && pump2State !== 1) {
+            dayData[dateKey].combinedOfflineTime += timeDifferenceMinutes;
+          }
+        }
+      }
+
+      const resultData = Object.entries(dayData).map(([date, data]) => ({
+        date,
+        pump1OnTime: data.pump1OnTime / 60,
+        pump2OnTime: data.pump2OnTime / 60,
+        combinedOfflineTime: data.combinedOfflineTime / 60,
+        powerCutTime: 1440 - (data.pump1OnTime + data.pump2OnTime + data.combinedOfflineTime) / 60, // Total minutes in a day
+      }));
+
+      return res.json(resultData);
+    });
+  } catch (error) {
+    console.error('An error occurred:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+}
 
 
 
@@ -509,5 +572,6 @@ module.exports = {
   getUsersByCompanyEmail,
   getDataByTimeIntervalAnalyticsPieChart,
   getDataByTimeIntervalAnalyticsLineChart,
-  TotalONOFFIntervalByDays
+  TotalONOFFIntervalByDays,
+  TotalONOFFCustomByDays
 }
