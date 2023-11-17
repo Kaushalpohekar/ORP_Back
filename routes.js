@@ -26,8 +26,8 @@ router.put('/updateCompanyDetails',user.updateCompanyDetails);
 router.put('/updatePassword',user.updatepassword);
 router.put('/updateContactDetails',user.updateContactDetails);
 router.post('/get-Analytics-Data-Line-Total-customs', dashboard.getAnalyticsDataOnTimeTotalLineCharts);
-router.get('/get-Analytics-Data-Line-Total-interval/:deviceId', dashboard.getAnalyticsDataOnTimeTotalLineCharts);
-
+router.get('/get-Analytics-Data-Line-Total-interval/:deviceId', dashboard.getDataByTimeIntervalAnalyticsLineChart);
+router.get('/get-Analytics-Data-Bar-Total-interval/:deviceId', dashboard.TotalONOFFIntervalByDays);
 
 //Elkem data
 router.get('/Graph1', elkem.graph1);

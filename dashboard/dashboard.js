@@ -99,7 +99,7 @@ function getReportData(req, res) {
   const { device_uid, start_time, end_time } = req.body;
   try {
     const checkDeviceListQuery = 'SELECT * FROM ORP_devices WHERE device_uid = ? LIMIT 1;';
-    const fetchDevicesQuery = 'SELECT * FROM ORP_Meter WHERE device_uid = ? AND date_time >= ? AND date_time <= ?;';
+    const fetchDevicesQuery = 'SELECT * FROM ORP_Meter WHERE device_uid = ? AND date_time >= ? AND date_time <= ? order by date_time ASC;';
 
     // First, check if the device exists in the ORP_devices table
     db.query(checkDeviceListQuery, [device_uid], (checkError, checkResult) => {
@@ -404,6 +404,100 @@ function getDataByTimeIntervalAnalyticsLineChart(req, res) {
 }
 
 
+function TotalONOFFIntervalByDays(req, res) {
+  try {
+    const deviceId = req.params.deviceId;
+    const timeInterval = req.query.interval;
+    if (!timeInterval) {
+      return res.status(400).json({ message: 'Invalid time interval' });
+    }
+
+    const intervals = {
+      'live': '30 SECOND',
+      'min': '1 MINUTE',
+      'hour': '1 HOUR',
+      'day': '24 HOUR',
+      'week': '7 DAY',
+      'month': '30 DAY',
+    };
+
+    if (!intervals[timeInterval]) {
+      return res.status(400).json({ message: 'Invalid time interval' });
+    }
+
+    const duration = intervals[timeInterval];
+
+    const sql = `
+      SELECT *
+      FROM ORP_Meter
+      WHERE device_uid = ? AND date_time >= NOW() - INTERVAL ${duration} order by date_time ASC
+    `;
+
+    db.query(sql, [deviceId], (error, results) => {
+      if (error) {
+        console.error('Error fetching data:', error);
+        return res.status(500).json({ message: 'Internal server error' });
+      }
+
+      const dayData = {};
+
+      for (const row of results) {
+        const dateTime = new Date(row.date_time);
+        const dateKey = dateTime.toISOString().split('T')[0];
+
+        if (!dayData[dateKey]) {
+          dayData[dateKey] = {
+            pump1OnTime: 0,
+            pump2OnTime: 0,
+            combinedOfflineTime: 0,
+          };
+        }
+
+        const pump1State = parseInt(row.pump_1);
+        const pump2State = parseInt(row.pump_2);
+
+        const prevRow = results.find(
+          (r) => new Date(r.date_time).toISOString().split('T')[0] === dateKey
+        );
+
+        if (prevRow) {
+          const timeDifferenceMinutes = (dateTime - new Date(prevRow.date_time)) / 60000;
+
+          if (pump1State === 1) {
+            dayData[dateKey].pump1OnTime += timeDifferenceMinutes;
+          }
+
+          if (pump2State === 1) {
+            dayData[dateKey].pump2OnTime += timeDifferenceMinutes;
+          }
+
+          if (pump1State !== 1 && pump2State !== 1) {
+            dayData[dateKey].combinedOfflineTime += timeDifferenceMinutes;
+          }
+        }
+      }
+
+      const resultData = Object.entries(dayData).map(([date, data]) => ({
+        date,
+        pump1OnTime: data.pump1OnTime / 60,  // Convert minutes to hours
+        pump2OnTime: data.pump2OnTime / 60,  // Convert minutes to hours
+        combinedOfflineTime: data.combinedOfflineTime / 60,  // Convert minutes to hours
+        powerCutTime: (1440 - (data.pump1OnTime + data.pump2OnTime + data.combinedOfflineTime)) / 60,  // Convert minutes to hours
+      }));
+
+
+      return res.json(resultData);
+    });
+  } catch (error) {
+    console.error('An error occurred:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+}
+
+
+
+
+
 module.exports = {
 	addDevice,
 	editDevice,
@@ -414,5 +508,6 @@ module.exports = {
   getAnalyticsDataOnTimeTotalLineCharts,
   getUsersByCompanyEmail,
   getDataByTimeIntervalAnalyticsPieChart,
-  getDataByTimeIntervalAnalyticsLineChart
+  getDataByTimeIntervalAnalyticsLineChart,
+  TotalONOFFIntervalByDays
 }
