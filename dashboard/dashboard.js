@@ -123,80 +123,36 @@ function getReportData(req, res) {
 }
 
 function getAnalyticsDataOnTimeTotalPieCharts(req, res) {
-  const { device_uid, start_time, end_time } = req.body;
   try {
-    const checkDeviceListQuery = 'SELECT * FROM ORP_devices WHERE device_uid = ? LIMIT 1;';
-    const fetchDevicesQuery = 'SELECT * FROM ORP_Meter WHERE device_uid = ? AND date_time >= ? AND date_time <= ?;';
+    const deviceId = req.params.deviceId;
+    const startDate = req.query.start;
+    const endDate = req.query.end;
 
-    // First, check if the device exists in the ORP_devices table
-    db.query(checkDeviceListQuery, [device_uid], (checkError, checkResult) => {
-      if (checkError) {
-        console.error('Error while checking device:', checkError);
+    if (!startDate || !endDate) {
+      return res.status(400).json({ message: 'Invalid parameters' });
+    }
+
+    const sql = `SELECT status, COUNT(*) as count FROM ORP_Meter_Logs WHERE device_uid = ? AND date_time >= ? AND date_time <= ? GROUP BY status`;
+    db.query(sql, [deviceId, startDate + 'T00:00:00.000Z', endDate + 'T23:59:59.999Z'], (error, results) => {
+      if (error) {
+        console.error('Error fetching data:', error);
         return res.status(500).json({ message: 'Internal server error' });
       }
 
-      if (checkResult.length === 0) {
-        return res.status(404).json({ message: 'Device not found in device_list' });
-      }
+      // Calculate total count
+      const totalCount = results.reduce((total, entry) => total + entry.count, 0);
 
-      // If the device exists in the device_list, proceed to fetch devices from ORP_Meter
-      db.query(fetchDevicesQuery, [device_uid, start_time, end_time], (fetchError, fetchResult) => {
-        if (fetchError) {
-          console.error('Error while fetching devices:', fetchError);
-          return res.status(500).json({ message: 'Internal server error' });
-        }
+      // Calculate percentage for each status
+      const dataWithPercentage = results.map((entry) => ({
+        status: entry.status,
+        count: entry.count,
+        percentage: (entry.count / totalCount) * 100
+      }));
 
-        // Calculate the on-time for pump_1, on-time for pump_2, and combined offline time
-        let pump1OnTime = 0;
-        let pump2OnTime = 0;
-        let combinedOfflineTime = 0;
-
-        let prevPump1State = 0;
-        let prevPump2State = 0;
-        let prevDateTime = null;
-
-        for (const row of fetchResult) {
-          const pump1State = parseInt(row.pump_1);
-          const pump2State = parseInt(row.pump_2);
-          const dateTime = new Date(row.date_time);
-
-          if (prevDateTime) {
-            const timeDifferenceMinutes = (dateTime - prevDateTime) / 60000; // Convert milliseconds to minutes
-
-            if (pump1State === 1) {
-              pump1OnTime += timeDifferenceMinutes;
-            }
-
-            if (pump2State === 1) {
-              pump2OnTime += timeDifferenceMinutes;
-            }
-
-            if (pump1State !== 1 && pump2State !== 1) {
-              combinedOfflineTime += timeDifferenceMinutes;
-            }
-          }
-
-          prevPump1State = pump1State;
-          prevPump2State = pump2State;
-          prevDateTime = dateTime;
-        }
-
-        // Calculate the total hours in the given start and end times
-        const totalHours = (new Date(end_time) - new Date(start_time)) / 3600000; // Convert milliseconds to hours
-
-        // Calculate the power cut time by subtracting the on-time from total hours
-        const powerCutTime = totalHours - (pump1OnTime + pump2OnTime + combinedOfflineTime);
-
-        return res.json({
-          pump1OnTime,
-          pump2OnTime,
-          combinedOfflineTime,
-          powerCutTime,
-        });
-      });
+      res.json({ dataStatus: dataWithPercentage });
     });
   } catch (error) {
-    console.error('Error in device retrieval:', error);
+    console.error('An error occurred:', error);
     res.status(500).json({ message: 'Internal server error' });
   }
 }
@@ -264,91 +220,57 @@ function getDataByTimeIntervalAnalyticsPieChart(req, res) {
     let duration;
     switch (timeInterval) {
       case 'Live':
-        duration = 30; // 30 seconds
+        duration = 'INTERVAL 30 SECOND'; // 30 seconds
         break;
       case 'min':
-        duration = 60; // 1 minute
+        duration = 'INTERVAL 1 MINUTE'; // 1 minute
         break;
       case 'hour':
-        duration = 3600; // 1 hour
+        duration = 'INTERVAL 1 HOUR' // 1 hour
         break;
       case 'day':
-        duration = 86400; // 24 hours
+        duration = 'INTERVAL 1 DAY'; // 24 hours
         break;
       case 'week':
-        duration = 604800; // 7 days
+        duration = 'INTERVAL 7 DAY'; // 7 days
         break;
       case 'month':
-        duration = 2592000; // 30 days
+        duration = 'INTERVAL 30 DAY'; // 30 days
         break;
       default:
         return res.status(400).json({ message: 'Invalid time interval' });
     }
 
-    const currentTime = new Date();
-    const startTime = new Date(currentTime - duration * 1000); // Calculate the start time
-
-    const sql = `SELECT * FROM ORP_Meter WHERE device_uid = ? AND date_time >= ?`;
-    db.query(sql, [deviceId, startTime], (error, results) => {
+    const sql = `SELECT status, COUNT(*) as count FROM ORP_Meter_Logs WHERE device_uid = ? AND date_time >= DATE_SUB(NOW(), ${duration}) GROUP BY status`;
+    db.query(sql, [deviceId], (error, results) => {
       if (error) {
         console.error('Error fetching data:', error);
         return res.status(500).json({ message: 'Internal server error' });
       }
 
-      let pump1OnTime = 0;
-      let pump2OnTime = 0;
-      let combinedOfflineTime = 0;
+      try {
+        // Calculate total count
+        const totalCount = results.reduce((total, entry) => total + entry.count, 0);
 
-      let prevPump1State = 0;
-      let prevPump2State = 0;
-      let prevDateTime = null;
+        // Calculate percentage for each status
+        const dataWithPercentage = results.map((entry) => ({
+          status: entry.status,
+          count: entry.count,
+          percentage: (entry.count / totalCount) * 100
+        }));
 
-      for (const row of results) {
-        const pump1State = parseInt(row.pump_1);
-        const pump2State = parseInt(row.pump_2);
-        const dateTime = new Date(row.date_time);
-
-        if (prevDateTime) {
-          const timeDifferenceMinutes = (dateTime - prevDateTime) / 60000; // Convert milliseconds to minutes
-
-          if (prevPump1State === 1) {
-            pump1OnTime += timeDifferenceMinutes;
-          }
-
-          if (prevPump2State === 1) {
-            pump2OnTime += timeDifferenceMinutes;
-          }
-
-          if (prevPump1State !== 1 && prevPump2State !== 1) {
-            combinedOfflineTime += timeDifferenceMinutes;
-          }
-        }
-
-        prevPump1State = pump1State;
-        prevPump2State = pump2State;
-        prevDateTime = dateTime;
+        res.json({ dataStatus: dataWithPercentage });
+      } catch (error) {
+        console.error('An error occurred:', error);
+        res.status(500).json({ message: 'Internal server error' });
       }
-
-      // Calculate the total hours in the given start and end times
-      const totalHours = duration / 3600; // Convert seconds to hours
-
-      // Calculate the power cut time by subtracting the on-time from total hours
-      const powerCutTime = totalHours - (pump1OnTime + pump2OnTime + combinedOfflineTime);
-
-      return res.json({
-        pump1OnTime,
-        pump2OnTime,
-        combinedOfflineTime,
-        powerCutTime,
-      });
     });
+
   } catch (error) {
     console.error('An error occurred:', error);
     res.status(500).json({ message: 'Internal server error' });
   }
 }
-
-
 
 function getDataByTimeIntervalAnalyticsLineChart(req, res) {
   try {
@@ -490,63 +412,116 @@ function TotalONOFFIntervalByDays(req, res) {
 
 function TotalONOFFCustomByDays(req, res) {
   try {
-    const {device_uid, start_time, end_time}= req.body;
-    const sql = 'SELECT * FROM ORP_Meter WHERE device_uid = ? AND date_time >= ? AND date_time <= ?';
+    const deviceId = req.params.deviceId;
+    const startDate = req.query.start;
+    const endDate = req.query.end;
 
-    db.query(sql, [device_uid, start_time, end_time], (error, results) => {
+    if (!startDate || !endDate) {
+      return res.status(400).json({ message: 'Invalid parameters' });
+    }
+
+    const sql = `SELECT DATE(date_time) as date, status, COUNT(*) as count FROM ORP_Meter_Logs WHERE device_uid = ? AND date_time >= ? AND date_time <= ? GROUP BY date, status`;
+    db.query(sql, [deviceId, startDate + 'T00:00:00.000Z', endDate + 'T23:59:59.999Z'], (error, results) => {
       if (error) {
         console.error('Error fetching data:', error);
         return res.status(500).json({ message: 'Internal server error' });
       }
 
-      const dayData = {};
+      console.log(results);
 
-      for (const row of results) {
-        const dateTime = new Date(row.date_time);
-        const dateKey = dateTime.toISOString().split('T')[0];
+      // Organize data into a nested structure (date -> status -> count)
+      const dataByDate = results.reduce((accumulator, entry) => {
+        const date = entry.date.toISOString().split('T')[0]; // Extract YYYY-MM-DD from the timestamp
+        accumulator[date] = accumulator[date] || [];
+        accumulator[date].push({ status: entry.status, count: entry.count });
+        return accumulator;
+      }, {});
 
-        if (!dayData[dateKey]) {
-          dayData[dateKey] = {
-            pump1OnTime: 0,
-            pump2OnTime: 0,
-            combinedOfflineTime: 0,
-          };
-        }
+      // Calculate total count and percentage for each date
+      const dataWithPercentage = Object.keys(dataByDate).map(date => {
+        const totalCount = dataByDate[date].reduce((total, entry) => total + entry.count, 0);
+        const statusPercentage = dataByDate[date].map(entry => ({
+          status: entry.status,
+          count: entry.count,
+          percentage: (entry.count / totalCount) * 100
+        }));
+        return { date, dataStatus: statusPercentage };
+      });
 
-        const pump1State = parseInt(row.pump_1);
-        const pump2State = parseInt(row.pump_2);
+      res.json({ dataByDate: dataWithPercentage });
+    });
+  } catch (error) {
+    console.error('An error occurred:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+}
 
-        const prevRow = results.find(
-          (r) => new Date(r.date_time).toISOString().split('T')[0] === dateKey
-        );
+function TotalONOFFIntervalByDays(req, res) {
+  try {
+    const deviceId = req.params.deviceId;
+    const timeInterval = req.query.interval;
+    if (!timeInterval) {
+      return res.status(400).json({ message: 'Invalid time interval' });
+    }
 
-        if (prevRow) {
-          const timeDifferenceMinutes = (dateTime - new Date(prevRow.date_time)) / 60000;
+    let duration;
+    switch (timeInterval) {
+      case 'Live':
+        duration = 'INTERVAL 1 DAY'; // 30 seconds
+        break;
+      case 'min':
+        duration = 'INTERVAL 1 DAY'; // 1 minute
+        break;
+      case 'hour':
+        duration = 'INTERVAL 1 DAY' // 1 hour
+        break;
+      case 'day':
+        duration = 'INTERVAL 1 DAY'; // 24 hours
+        break;
+      case 'week':
+        duration = 'INTERVAL 7 DAY'; // 7 days
+        break;
+      case 'month':
+        duration = 'INTERVAL 30 DAY'; // 30 days
+        break;
+      default:
+        return res.status(400).json({ message: 'Invalid time interval' });
+    }
 
-          if (pump1State === 1) {
-            dayData[dateKey].pump1OnTime += timeDifferenceMinutes;
-          }
-
-          if (pump2State === 1) {
-            dayData[dateKey].pump2OnTime += timeDifferenceMinutes;
-          }
-
-          if (pump1State !== 1 && pump2State !== 1) {
-            dayData[dateKey].combinedOfflineTime += timeDifferenceMinutes;
-          }
-        }
+    const sql = `SELECT DATE(date_time) as date, status, COUNT(*) as count FROM ORP_Meter_Logs WHERE device_uid = ? AND date_time >= DATE_SUB(NOW(), ${duration}) GROUP BY date, status`;
+    db.query(sql, [deviceId], (error, results) => {
+      if (error) {
+        console.error('Error fetching data:', error);
+        return res.status(500).json({ message: 'Internal server error' });
       }
 
-      const resultData = Object.entries(dayData).map(([date, data]) => ({
-        date,
-        pump1OnTime: data.pump1OnTime / 60,
-        pump2OnTime: data.pump2OnTime / 60,
-        combinedOfflineTime: data.combinedOfflineTime / 60,
-        powerCutTime: 1440 - (data.pump1OnTime + data.pump2OnTime + data.combinedOfflineTime) / 60, // Total minutes in a day
-      }));
+      try {
+        // Organize data into a nested structure (date -> status -> count)
+        const dataByDate = results.reduce((accumulator, entry) => {
+          const date = entry.date.toISOString().split('T')[0]; // Extract YYYY-MM-DD from the timestamp
+          accumulator[date] = accumulator[date] || [];
+          accumulator[date].push({ status: entry.status, count: entry.count });
+          return accumulator;
+        }, {});
 
-      return res.json(resultData);
+        // Calculate total count and percentage for each date
+        const dataWithPercentage = Object.keys(dataByDate).map(date => {
+          const totalCount = dataByDate[date].reduce((total, entry) => total + entry.count, 0);
+          const statusPercentage = dataByDate[date].map(entry => ({
+            status: entry.status,
+            count: entry.count,
+            percentage: (entry.count / totalCount) * 100
+          }));
+          return { date, dataStatus: statusPercentage };
+        });
+
+        res.json({ dataByDate: dataWithPercentage });
+      } catch (error) {
+        console.error('An error occurred:', error);
+        res.status(500).json({ message: 'Internal server error' });
+      }
     });
+
   } catch (error) {
     console.error('An error occurred:', error);
     res.status(500).json({ message: 'Internal server error' });
