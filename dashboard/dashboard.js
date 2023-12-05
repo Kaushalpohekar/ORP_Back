@@ -93,7 +93,7 @@ function getReportData(req, res) {
   const { device_uid, start_time, end_time } = req.body;
   try {
     const checkDeviceListQuery = 'SELECT * FROM ORP_devices WHERE device_uid = ? LIMIT 1;';
-    const fetchDevicesQuery = 'SELECT * FROM ORP_Meter WHERE device_uid = ? AND date_time >= ? AND date_time <= ? order by date_time ASC;';
+    const fetchDevicesQuery = 'SELECT * FROM ORP_Meter WHERE device_uid = ? AND date_time >= ? AND date_time <= ? order by date_time DESC;';
 
     // First, check if the device exists in the ORP_devices table
     db.query(checkDeviceListQuery, [device_uid], (checkError, checkResult) => {
@@ -304,7 +304,11 @@ function getDataByTimeIntervalAnalyticsLineChart(req, res) {
         return res.status(400).json({ message: 'Invalid time interval' });
     }
 
-    const sql = `SELECT * FROM ORP_Meter WHERE device_uid = ? AND date_time >= DATE_SUB(NOW(), ${duration})`;
+    const sql = `
+      SELECT * FROM ORP_Meter 
+      WHERE device_uid = ? 
+      AND date_time >= CONVERT_TZ(DATE_SUB(NOW(), ${duration}), 'UTC', 'Asia/Kolkata')
+    `;
     db.query(sql, [deviceId], (error, results) => {
       if (error) {
         console.error('Error fetching data:', error);

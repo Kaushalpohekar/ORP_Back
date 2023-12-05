@@ -48,10 +48,10 @@ function monitorDevice() {
           let status = ''; // Define the status variable within the loop
 
           if (isDeviceOnline) {
-            if (pump_1 === 0) {
+            if (pump_1 === 1) {
               insertLogValues.push([device_uid, currentTimestamp, orp, pump_1, pump_2, 'pump1ON']);
               status = 'pump1ON';
-            } else if( pump_2 === 0){
+            } else if( pump_2 === 1){
               insertLogValues.push([device_uid, currentTimestamp, orp, pump_1, pump_2, 'pump2ON']);
               status = 'pump2ON';
             } else {

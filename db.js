@@ -19,4 +19,6 @@ connection.getConnection((err, connection) => {
   console.log('Connected to database with ID:', connection.threadId);
 });
 
+
+
 module.exports = connection;
