@@ -93,7 +93,8 @@ function getReportData(req, res) {
   const { device_uid, start_time, end_time } = req.body;
   try {
     const checkDeviceListQuery = 'SELECT * FROM ORP_devices WHERE device_uid = ? LIMIT 1;';
-    const fetchDevicesQuery = 'SELECT * FROM ORP_Meter WHERE device_uid = ? AND date_time >= ? AND date_time <= ? order by date_time DESC;';
+    //const fetchDevicesQuery = 'SELECT * FROM ORP_Meter WHERE device_uid = ? AND date_time >= ? AND date_time <= ? order by date_time DESC;';
+    const fetchDevicesQuery = 'SELECT * FROM ORP_Meter WHERE device_uid = ? AND date_time >= ? AND date_time <= ? AND (Pump_1 = 1 OR Pump_2 = 1) ORDER BY date_time DESC;';
 
     // First, check if the device exists in the ORP_devices table
     db.query(checkDeviceListQuery, [device_uid], (checkError, checkResult) => {

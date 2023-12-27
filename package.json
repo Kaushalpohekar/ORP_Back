@@ -18,5 +18,8 @@
     "jsonwebtoken": "^9.0.2",
     "mqtt": "^5.2.2",
     "mysql": "^2.18.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
   }
 }
