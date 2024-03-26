@@ -31,7 +31,7 @@ function monitorDevice() {
         return;
       }
 
-      const insertLogQuery = 'INSERT INTO ORP_Meter_Logs (device_uid, date_time, orp,  pump_1, pump_2, status) VALUES ?';
+      const insertLogQuery = 'INSERT INTO ORP_Meter_Logs (device_uid, orp,  pump_1, pump_2, status) VALUES ?';
       const insertLogValues = [];
       const currentTimestamp = new Date().toISOString();
 
@@ -48,28 +48,20 @@ function monitorDevice() {
           let status = ''; // Define the status variable within the loop
 
           if (isDeviceOnline) {
-            if (pump_1 === 1) {
-              insertLogValues.push([device_uid, currentTimestamp, orp, pump_1, pump_2, 'pump1ON']);
+            if (pump_1 === '1' && pump_2 === '0' || pump_2 === '2') {
+              insertLogValues.push([device_uid, orp, pump_1, pump_2, 'pump1ON']);
               status = 'pump1ON';
-            } else if( pump_2 === 1){
-              insertLogValues.push([device_uid, currentTimestamp, orp, pump_1, pump_2, 'pump2ON']);
+            } else if( pump_2 === '1' && pump_1 === '0' || pump_1 === '2'){
+              insertLogValues.push([device_uid,  orp, pump_1, pump_2, 'pump2ON']);
               status = 'pump2ON';
             } else {
-              insertLogValues.push([device_uid, currentTimestamp, orp, pump_1, pump_2, 'bothOFF']);
+              insertLogValues.push([device_uid, orp, pump_1, pump_2, 'bothOFF']);
               status = 'bothOFF';
             }
           } else {
-            insertLogValues.push([device_uid, currentTimestamp, orp, pump_1, pump_2, 'powerCUT']);
+            insertLogValues.push([device_uid, orp, pump_1, pump_2, 'powerCUT']);
             status = 'powerCUT';
           }
-
-          // Update status in 'tms_devices' table
-          // const updateStatusQueryTMS = 'UPDATE ORP SET Status = ? WHERE DeviceUID = ?';
-          // db.query(updateStatusQueryTMS, [status, DeviceUID], (error) => {
-          //   if (error) {
-          //     console.error('Error updating status in tms_devices table: ', error);
-          //   }
-          // });
         }
       });
 
@@ -79,6 +71,7 @@ function monitorDevice() {
             console.error('Error inserting the device data into tms_log: ', error);
             return;
           }
+          console.log("Inserteds");
         });
       }
     });

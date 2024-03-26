@@ -1,10 +1,10 @@
 const db = require('../db');
 
 function addDevice(req, res) {
-	const { device_uid, device_longitute, device_latitude, device_name, company_email } = req.body;
+	const { device_uid, device_longitute, device_latitude, device_name, company_email, location } = req.body;
 	try {
 		const checkDeviceQuery = 'SELECT * FROM ORP_devices WHERE device_uid = ?';
-		const insertDeviceQuery = 'INSERT INTO ORP_devices (device_uid, device_longitute, device_latitude, device_name, company_email) VALUES (?,?,?,?,?)';
+		const insertDeviceQuery = 'INSERT INTO ORP_devices (device_uid, device_longitute, device_latitude, device_name, company_email, location) VALUES (?,?,?,?,?,?)';
 
 		db.query(checkDeviceQuery, [device_uid], (error, checkResult) => {
 		  if (error) {
@@ -16,7 +16,7 @@ function addDevice(req, res) {
 		    return res.status(400).json({ message: 'Device already added' });
 		  }
 
-		  db.query(insertDeviceQuery, [device_uid, device_longitute, device_latitude, device_name, company_email], (insertError, insertResult) => {
+		  db.query(insertDeviceQuery, [device_uid, device_longitute, device_latitude, device_name, company_email, location], (insertError, insertResult) => {
 		    if (insertError) {
 		      console.error('Error while inserting device:', insertError);
 		      return res.status(500).json({ message: 'Internal server error' });
@@ -94,7 +94,7 @@ function getReportData(req, res) {
   try {
     const checkDeviceListQuery = 'SELECT * FROM ORP_devices WHERE device_uid = ? LIMIT 1;';
     //const fetchDevicesQuery = 'SELECT * FROM ORP_Meter WHERE device_uid = ? AND date_time >= ? AND date_time <= ? order by date_time DESC;';
-    const fetchDevicesQuery = 'SELECT * FROM ORP_Meter WHERE device_uid = ? AND date_time >= ? AND date_time <= ? AND (Pump_1 = 1 OR Pump_2 = 1) ORDER BY date_time DESC;';
+    const fetchDevicesQuery = 'SELECT * FROM ORP_Meter WHERE device_uid = ? AND date_time >= ? AND date_time <= ? AND (Pump_1 = 1 OR Pump_2 = 1 )  ORDER BY date_time DESC;';
 
     // First, check if the device exists in the ORP_devices table
     db.query(checkDeviceListQuery, [device_uid], (checkError, checkResult) => {
@@ -126,8 +126,8 @@ function getReportData(req, res) {
 function getAnalyticsDataOnTimeTotalPieCharts(req, res) {
   try {
     const deviceId = req.params.deviceId;
-    const startDate = req.query.start;
-    const endDate = req.query.end;
+    const startDate = req.body.start;
+    const endDate = req.body.end;
 
     if (!startDate || !endDate) {
       return res.status(400).json({ message: 'Invalid parameters' });
@@ -176,7 +176,7 @@ function getAnalyticsDataOnTimeTotalLineCharts(req, res) {
       }
 
       // If the device exists in the device_list, proceed to fetch devices from ORP_Meter
-      db.query(fetchDevicesQuery, [device_uid, start_time, end_time], (fetchError, fetchResult) => {
+      db.query(fetchDevicesQuery, [device_uid, start_time + 'T00:00:00.000Z', end_time + 'T23:59:59.999Z'], (fetchError, fetchResult) => {
         if (fetchError) {
           console.error('Error while fetching devices:', fetchError);
           return res.status(500).json({ message: 'Internal server error' });
@@ -308,7 +308,7 @@ function getDataByTimeIntervalAnalyticsLineChart(req, res) {
     const sql = `
       SELECT * FROM ORP_Meter 
       WHERE device_uid = ? 
-      AND date_time >= CONVERT_TZ(DATE_SUB(NOW(), ${duration}), 'UTC', 'Asia/Kolkata')
+      AND date_time >= DATE_SUB(NOW(), ${duration});
     `;
     db.query(sql, [deviceId], (error, results) => {
       if (error) {
@@ -346,7 +346,7 @@ function TotalONOFFCustomByDays(req, res) {
 
       // Organize data into a nested structure (date -> status -> count)
       const dataByDate = results.reduce((accumulator, entry) => {
-        const date = entry.date.toISOString().split('T')[0]; // Extract YYYY-MM-DD from the timestamp
+        const date = entry.date.toISOString(); // Extract YYYY-MM-DD from the timestamp
         accumulator[date] = accumulator[date] || [];
         accumulator[date].push({ status: entry.status, count: entry.count });
         return accumulator;
@@ -413,7 +413,7 @@ function TotalONOFFIntervalByDays(req, res) {
       try {
         // Organize data into a nested structure (date -> status -> count)
         const dataByDate = results.reduce((accumulator, entry) => {
-          const date = entry.date.toISOString().split('T')[0]; // Extract YYYY-MM-DD from the timestamp
+          const date = entry.date.toISOString(); // Extract YYYY-MM-DD from the timestamp
           accumulator[date] = accumulator[date] || [];
           accumulator[date].push({ status: entry.status, count: entry.count });
           return accumulator;
@@ -443,7 +443,51 @@ function TotalONOFFIntervalByDays(req, res) {
   }
 }
 
+function fetchLatestEntry(req, res) {
+  const { companyEmail } = req.params;
+  const fetchUserDevicesQuery = `SELECT * FROM ORP_devices WHERE company_email = ?`;
+  const fetchLatestEntryQuery = `SELECT * FROM ORP_Meter WHERE device_uid = ? ORDER BY date_time DESC LIMIT 1`;
+  const defaultEntry = {
+    id: 0,
+    device_uid: null,
+    date_time: new Date(new Date().getTime() - 30 * 24 * 60 * 60 * 1000).toISOString(),
+    orp: null,
+    pump_1: 0,
+    pump_2: 0
+  };
 
+  db.query(fetchUserDevicesQuery, [companyEmail], (fetchUserDevicesError, devices) => {
+    if (fetchUserDevicesError) {
+      return res.status(401).json({ message: 'Error while fetching devices' });
+    }
+
+    if (devices.length === 0) {
+      return res.status(404).json({ message: 'No devices found for the user' });
+    }
+
+    const promises = devices.map(device => {
+      return new Promise((resolve, reject) => {
+        const deviceId = device.device_uid;
+        db.query(fetchLatestEntryQuery, [deviceId], (fetchLatestEntryError, fetchLatestEntryResult) => {
+          if (fetchLatestEntryError) {
+            reject({ [deviceId]: { entry: [defaultEntry] } });
+          } else {
+            const deviceEntry = fetchLatestEntryResult.length === 0 ? [defaultEntry] : fetchLatestEntryResult;
+            resolve({ [deviceId]: { entry: deviceEntry } });
+          }
+        });
+      });
+    });
+
+    Promise.all(promises)
+      .then(results => {
+        res.json({ latestEntry: results });
+      })
+      .catch(error => {
+        res.status(500).json({ message: 'Error while fetching data for some devices', error });
+      });
+  });
+}
 
 module.exports = {
 	addDevice,
@@ -457,5 +501,6 @@ module.exports = {
   getDataByTimeIntervalAnalyticsPieChart,
   getDataByTimeIntervalAnalyticsLineChart,
   TotalONOFFIntervalByDays,
-  TotalONOFFCustomByDays
+  TotalONOFFCustomByDays,
+  fetchLatestEntry
 }
