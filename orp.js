@@ -3,7 +3,7 @@ const mysql = require('mysql2');
 const broker = 'ws://dashboard.senselive.in:9001';
 
 const mysqlConfig = {
-  host: '13.232.174.80',
+  host: '13.127.102.12',
   user: 'mysql',
   password: 'sense!123',
   database: 'orp',
