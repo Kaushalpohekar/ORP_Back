@@ -6,7 +6,7 @@ const mysqlConfig = {
   host: '13.127.102.12',
   user: 'mysql',
   password: 'sense!123',
-  database: 'orp',
+  database: 'ORP',
   port: 3306,
 };
 
