@@ -56,7 +56,7 @@ mqttClient.on('message', (topic, message) => {
         }
       });
     } else {
-      console.log('No relevant data fields found. Skipping MySQL insertion.');
+      console.log('No relevant data fields found. Skipping MySQL insertion.', data.DeviceUID || data.device_uid || data.deviceuid);
     }
   } catch (error) {
     console.error('Error processing message:', error);
